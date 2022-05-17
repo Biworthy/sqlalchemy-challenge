@@ -1,6 +1,8 @@
+from unittest import result
 import numpy as np
 import pandas as pd
 import datetime as dt
+from requests import session
 
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
@@ -23,7 +25,8 @@ def home():
         f"Available Routes: <br/>"
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
-        f"/api/v1.0/tobs"
+        f"/api/v1.0/tobs<br/>"
+        f"/api/v1.0/temp/start/end"
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -59,21 +62,40 @@ def tobs():
 
 #     * Convert the query results to a Dictionary using `date` as the key and `tobs` as the value.
 # #   * Return the json representation of your dictionary.
+    session.close()
+    """
     tobs_dict = {}
     for result in temperature:
         tobs_dict[result[0]] = result[1]
-
+    """
+    tobs_dict = list(np.ravel(temperature))
     return jsonify(tobs_dict)
 
+@app.route("/api/v1.0/temp/<start>")
+@app.route("/api/v1.0/temp/<start>/<end>")
+
+def temperature(start = None, end = None ):
+
+    select_statement = [func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)]
 
 
-    # prcp_dict = []
-    # for result in query_results:
-    #     row = {}
-    #     row["date"] = result[0]
-    #     row["prcp"] = result[1]
-    #     prcp_dict.append(row)
-    # return jsonify(prcp_dict)
+    if not end:
+        # This logic is for when someone did not put in a end date
+
+        start  = dt.datetime.strptime(start, "%m%d%Y")
+        result  = session.query(*select_statement).filter(Measurement.date >= start).all()
+        session.close()
+
+        start_only = list(np.ravel(result))
+        return jsonify(start_only)
+    # This logic is for when both start and end date are included
+    start  = dt.datetime.strptime(start, "%m%d%Y")
+    end  = dt.datetime.strptime(end, "%m%d%Y")
+    result  = session.query(*select_statement).filter(Measurement.date >= start).filter(Measurement.date <= end).all()
+    session.close()
+
+    start_end = list(np.ravel(result))
+    return jsonify(start_end)
 
     session.close()
     
