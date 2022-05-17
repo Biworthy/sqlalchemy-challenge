@@ -26,6 +26,7 @@ def home():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
+        f"/api/v1.0/temp/start<br/>"
         f"/api/v1.0/temp/start/end"
     )
 
@@ -73,24 +74,22 @@ def tobs():
 
 @app.route("/api/v1.0/temp/<start>")
 @app.route("/api/v1.0/temp/<start>/<end>")
-
-def temperature(start = None, end = None ):
-
+def tempTrip1(start=None, end=None):
     select_statement = [func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)]
-
-
+    session = Session(engine)
     if not end:
         # This logic is for when someone did not put in a end date
 
-        start  = dt.datetime.strptime(start, "%m%d%Y")
+        start  = dt.datetime.strptime(start, "%Y-%m-%d")
         result  = session.query(*select_statement).filter(Measurement.date >= start).all()
         session.close()
-
         start_only = list(np.ravel(result))
         return jsonify(start_only)
+    
     # This logic is for when both start and end date are included
-    start  = dt.datetime.strptime(start, "%m%d%Y")
-    end  = dt.datetime.strptime(end, "%m%d%Y")
+    # start  = dt.datetime.strptime(start, "%m%d%Y")
+    start  = dt.datetime.strptime(start, "%Y-%m-%d")
+    end  = dt.datetime.strptime(end, "%Y-%m-%d")
     result  = session.query(*select_statement).filter(Measurement.date >= start).filter(Measurement.date <= end).all()
     session.close()
 
@@ -98,6 +97,7 @@ def temperature(start = None, end = None ):
     return jsonify(start_end)
 
     session.close()
+
     
 
 if __name__ == "__main__":
